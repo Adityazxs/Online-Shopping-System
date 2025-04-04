@@ -1,0 +1,269 @@
+Code...
+
+#include <iostream>
+#include <iomanip>
+#include <vector>
+#include <map>
+#include <cstdlib>
+#include <ctime>
+#include <unistd.h>
+
+using namespace std;
+
+// Product structure to store item details
+struct Product {
+    string name;
+    double price;
+    int quantity;
+};
+
+// Shopping Cart structure
+struct Cart {
+    map<string, vector<Product>> items;
+    double total = 0;
+};
+
+// ANSI Escape Codes for colors
+#define COLOR_RED     "\x1b[31m"
+#define COLOR_GREEN   "\x1b[32m"
+#define COLOR_YELLOW  "\x1b[33m"
+#define COLOR_BLUE    "\x1b[34m"
+#define COLOR_RESET   "\x1b[0m"
+
+// Animation functions
+void clearScreen() {
+    system("cls || clear");
+}
+
+void loadingAnimation() {
+    for(int i = 0; i < 3; i++) {
+        cout << "Loading" << string(i+1, '.') << endl;
+        usleep(500000);
+        clearScreen();
+    }
+}
+
+void printHeader() {
+    cout << COLOR_BLUE;
+    cout << "**********************************************\n";
+    cout << "*           ELECTRONIC MART                  *\n";
+    cout << "*     Your One-Stop Tech Solution            *\n";
+    cout << "**********************************************\n";
+    cout << COLOR_RESET;
+}
+
+// Product database
+map<string, vector<Product>> productDB = {
+    {"Mobile", {
+        {"Apple iPhone 15", 90000},
+        {"Samsung S24 Ultra", 130000},
+        {"Google Pixel 8", 75000},
+        {"OnePlus 12", 65000},
+        {"Xiaomi 14 Pro", 55000}
+    }},
+    {"Laptop", {
+        {"MacBook Pro 16\"", 250000},
+        {"Dell XPS 15", 180000},
+        {"HP Spectre x360", 150000},
+        {"Lenovo ThinkPad X1", 160000},
+        {"Asus ROG Zephyrus", 200000}
+    }},
+    {"Headphone", {
+        {"Sony WH-1000XM5", 35000},
+        {"Bose QuietComfort 45", 33000},
+        {"Apple AirPods Max", 60000},
+        {"Sennheiser Momentum 4", 40000},
+        {"Jabra Elite 85h", 25000}
+    }}
+};
+
+// Function prototypes
+void displayMainMenu();
+void displayCategory(const string& category, Cart &cart);
+void showCart(Cart &cart);
+void checkout(Cart &cart);
+void applyDiscount(Cart &cart);
+
+int main() {
+    srand(time(0));
+    Cart cart;
+    char choice;
+
+    clearScreen();
+    printHeader();
+    loadingAnimation();
+
+    while(true) {
+        clearScreen();
+        printHeader();
+        cout << COLOR_YELLOW << "\nMain Menu:\n" << COLOR_RESET;
+        cout << "1. Shop Electronics\n";
+        cout << "2. View Cart\n";
+        cout << "3. Checkout\n";
+        cout << "4. Exit\n";
+        cout << "Enter choice: ";
+        cin >> choice;
+
+        switch(choice) {
+            case '1': 
+                displayMainMenu();
+                break;
+            case '2':
+                showCart(cart);
+                break;
+            case '3':
+                checkout(cart);
+                break;
+            case '4':
+                cout << COLOR_GREEN << "\nThank you for shopping with us!\n" << COLOR_RESET;
+                return 0;
+            default:
+                cout << COLOR_RED << "\nInvalid choice! Please try again.\n" << COLOR_RESET;
+                usleep(1000000);
+        }
+    }
+}
+
+void displayMainMenu() {
+    Cart cart;
+    int categoryChoice;
+
+    while(true) {
+        clearScreen();
+        printHeader();
+        cout << COLOR_YELLOW << "\nAvailable Categories:\n" << COLOR_RESET;
+        int index = 1;
+        for(auto &category : productDB) {
+            cout << index << ". " << category.first << "\n";
+            index++;
+        }
+        cout << index << ". Return to Main Menu\n";
+        cout << "Enter choice: ";
+        cin >> categoryChoice;
+
+        if(categoryChoice == productDB.size() + 1) return;
+        if(categoryChoice < 1 || categoryChoice > productDB.size()) {
+            cout << COLOR_RED << "Invalid choice!" << COLOR_RESET;
+            usleep(1000000);
+            continue;
+        }
+
+        auto it = productDB.begin();
+        advance(it, categoryChoice-1);
+        displayCategory(it->first, cart);
+    }
+}
+
+void displayCategory(const string& category, Cart &cart) {
+    int productChoice;
+    int quantity;
+
+    while(true) {
+        clearScreen();
+        printHeader();
+        cout << COLOR_YELLOW << "\n" << category << " Collection:\n" << COLOR_RESET;
+        
+        int index = 1;
+        for(auto &product : productDB[category]) {
+            cout << index << ". " << product.name 
+                 << " - " << COLOR_GREEN << "₹" << fixed << setprecision(2) << product.price 
+                 << COLOR_RESET << "\n";
+            index++;
+        }
+        cout << index << ". Return to Categories\n";
+        cout << "Enter choice: ";
+        cin >> productChoice;
+
+        if(productChoice == productDB[category].size() + 1) return;
+        if(productChoice < 1 || productChoice > productDB[category].size()) {
+            cout << COLOR_RED << "Invalid choice!" << COLOR_RESET;
+            usleep(1000000);
+            continue;
+        }
+
+        cout << "Enter quantity: ";
+        cin >> quantity;
+
+        Product selected = productDB[category][productChoice-1];
+        selected.quantity = quantity;
+        cart.items[category].push_back(selected);
+        cart.total += selected.price * quantity;
+
+        cout << COLOR_GREEN << "\nAdded to cart: " << selected.quantity << " x " 
+             << selected.name << COLOR_RESET << endl;
+        usleep(1500000);
+    }
+}
+
+void showCart(Cart &cart) {
+    clearScreen();
+    printHeader();
+    cout << COLOR_YELLOW << "\nYour Shopping Cart:\n" << COLOR_RESET;
+    
+    if(cart.items.empty()) {
+        cout << "Your cart is empty!\n";
+        usleep(1000000);
+        return;
+    }
+
+    for(auto &category : cart.items) {
+        cout << "\n" << COLOR_BLUE << category.first << ":" << COLOR_RESET << "\n";
+        for(auto &product : category.second) {
+            cout << " - " << product.name << " (" << product.quantity << ")\n"
+                 << "   ₹" << product.price * product.quantity << "\n";
+        }
+    }
+
+    cout << "\n" << COLOR_GREEN << "Total: ₹" << cart.total << COLOR_RESET << "\n\n";
+    cout << "Press any key to continue...";
+    cin.ignore();
+    cin.get();
+}
+
+void checkout(Cart &cart) {
+    clearScreen();
+    printHeader();
+    
+    if(cart.items.empty()) {
+        cout << "Your cart is empty! Nothing to checkout.\n";
+        usleep(1000000);
+        return;
+    }
+
+    showCart(cart);
+    applyDiscount(cart);
+
+    cout << "\n" << COLOR_YELLOW << "Payment Options:\n" << COLOR_RESET;
+    cout << "1. Credit Card\n2. Debit Card\n3. UPI\n4. Net Banking\n";
+    cout << "Enter payment method: ";
+    
+    int payment;
+    cin >> payment;
+    
+    cout << "\nProcessing payment";
+    for(int i = 0; i < 3; i++) {
+        cout << ".";
+        cout.flush();
+        usleep(500000);
+    }
+    
+    cout << COLOR_GREEN << "\n\nPayment successful!\n";
+    cout << "Thank you for your purchase!\n" << COLOR_RESET;
+    usleep(2000000);
+    
+    cart.items.clear();
+    cart.total = 0;
+}
+
+void applyDiscount(Cart &cart) {
+    if(cart.total > 200000) {
+        cout << COLOR_GREEN << "\nCongratulations! You've got 15% discount!\n" << COLOR_RESET;
+        cart.total *= 0.85;
+    } else if(cart.total > 100000) {
+        cout << COLOR_GREEN << "\nCongratulations! You've got 10% discount!\n" << COLOR_RESET;
+        cart.total *= 0.90;
+    } else if(cart.total > 50000) {
+        cout << COLOR_GREEN << "\nCongratulations! You've got 5% discount!\n" << COLOR_RESET;
+        cart.total *= 0.95;
+    }
+}
